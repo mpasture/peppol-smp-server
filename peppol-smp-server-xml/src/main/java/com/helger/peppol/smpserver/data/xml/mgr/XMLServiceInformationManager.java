@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,7 +51,7 @@ import com.helger.peppol.smpserver.domain.serviceinfo.SMPServiceInformation;
 import com.helger.photon.basic.app.dao.impl.AbstractWALDAO;
 import com.helger.photon.basic.app.dao.impl.DAOException;
 import com.helger.photon.basic.app.dao.impl.EDAOActionType;
-import com.helger.photon.basic.security.audit.AuditHelper;
+import com.helger.photon.basic.audit.AuditHelper;
 
 /**
  * Manager for all {@link SMPServiceInformation} objects.
@@ -96,8 +96,7 @@ public final class XMLServiceInformationManager extends AbstractWALDAO <SMPServi
   {
     for (final IMicroElement eSMPServiceInformation : aDoc.getDocumentElement ().getAllChildElements (ELEMENT_ITEM))
     {
-      _addSMPServiceInformation (MicroTypeConverter.convertToNative (eSMPServiceInformation,
-                                                                     SMPServiceInformation.class));
+      _addSMPServiceInformation (MicroTypeConverter.convertToNative (eSMPServiceInformation, SMPServiceInformation.class));
     }
     return EChange.UNCHANGED;
   }
@@ -119,9 +118,7 @@ public final class XMLServiceInformationManager extends AbstractWALDAO <SMPServi
 
     final String sSMPServiceInformationID = aSMPServiceInformation.getID ();
     if (m_aMap.containsKey (sSMPServiceInformationID))
-      throw new IllegalArgumentException ("SMPServiceInformation ID '" +
-                                          sSMPServiceInformationID +
-                                          "' is already in use!");
+      throw new IllegalArgumentException ("SMPServiceInformation ID '" + sSMPServiceInformationID + "' is already in use!");
     m_aMap.put (aSMPServiceInformation.getID (), aSMPServiceInformation);
   }
 
@@ -131,8 +128,7 @@ public final class XMLServiceInformationManager extends AbstractWALDAO <SMPServi
                                                         @Nullable final IPeppolProcessIdentifier aProcessID,
                                                         @Nullable final ISMPTransportProfile aTransportProfile)
   {
-    final ISMPServiceInformation aOldInformation = getSMPServiceInformationOfServiceGroupAndDocumentType (aServiceGroup,
-                                                                                                          aDocTypeID);
+    final ISMPServiceInformation aOldInformation = getSMPServiceInformationOfServiceGroupAndDocumentType (aServiceGroup, aDocTypeID);
     if (aOldInformation != null)
     {
       final ISMPProcess aProcess = aOldInformation.getProcessOfID (aProcessID);
@@ -158,13 +154,14 @@ public final class XMLServiceInformationManager extends AbstractWALDAO <SMPServi
     if (aOldInformation != null)
     {
       // If a service information is present, it must be the provided object!
-      if (aOldInformation != aSMPServiceInformation)
-        throw new IllegalStateException ("Internal inconsistency!");
-      bChangedExisting = true;
+      // This is not true for the REST API
+      if (aOldInformation == aSMPServiceInformation)
+        bChangedExisting = true;
     }
 
     if (bChangedExisting)
     {
+      // Edit existing
       m_aRWLock.writeLock ().lock ();
       try
       {
@@ -183,9 +180,17 @@ public final class XMLServiceInformationManager extends AbstractWALDAO <SMPServi
     }
     else
     {
+      // (Optionally delete the old one and) create the new one
+      boolean bRemovedOld = false;
       m_aRWLock.writeLock ().lock ();
       try
       {
+        if (aOldInformation != null)
+          bRemovedOld = m_aMap.remove (aOldInformation.getID ()) == aOldInformation;
+
+        if (bRemovedOld)
+          markAsChanged (aOldInformation, EDAOActionType.DELETE);
+
         _addSMPServiceInformation (aSMPServiceInformation);
         markAsChanged (aSMPServiceInformation, EDAOActionType.CREATE);
       }
@@ -193,6 +198,19 @@ public final class XMLServiceInformationManager extends AbstractWALDAO <SMPServi
       {
         m_aRWLock.writeLock ().unlock ();
       }
+
+      if (bRemovedOld)
+        AuditHelper.onAuditDeleteSuccess (SMPServiceInformation.OT,
+                                          aOldInformation.getID (),
+                                          aOldInformation.getServiceGroupID (),
+                                          aOldInformation.getDocumentTypeIdentifier ().getURIEncoded ());
+      else
+        if (aOldInformation != null)
+          AuditHelper.onAuditDeleteFailure (SMPServiceInformation.OT,
+                                            aOldInformation.getID (),
+                                            aOldInformation.getServiceGroupID (),
+                                            aOldInformation.getDocumentTypeIdentifier ().getURIEncoded ());
+
       AuditHelper.onAuditCreateSuccess (SMPServiceInformation.OT,
                                         aSMPServiceInformation.getID (),
                                         aSMPServiceInformation.getServiceGroupID (),
@@ -242,7 +260,7 @@ public final class XMLServiceInformationManager extends AbstractWALDAO <SMPServi
 
   @Nonnull
   @ReturnsMutableCopy
-  public Collection <? extends ISMPServiceInformation> getAllSMPServiceInformations ()
+  public Collection <? extends ISMPServiceInformation> getAllSMPServiceInformation ()
   {
     m_aRWLock.readLock ().lock ();
     try

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2014-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,7 +59,7 @@ public final class RunInJettySMPSERVER
     final Server aServer = new Server ();
     // Create connector on Port
     final ServerConnector aConnector = new ServerConnector (aServer);
-    aConnector.setPort (80);
+    aConnector.setPort (90);
     aConnector.setIdleTimeout (30000);
     // aConnector.setStatsOn (true);
     aServer.setConnectors (new Connector [] { aConnector });

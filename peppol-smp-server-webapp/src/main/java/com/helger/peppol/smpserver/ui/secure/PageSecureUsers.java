@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2014-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import com.helger.commons.annotation.Nonempty;
 import com.helger.commons.compare.ESortOrder;
+import com.helger.commons.errorlist.FormErrors;
 import com.helger.commons.state.EValidity;
 import com.helger.commons.state.IValidityIndicator;
 import com.helger.commons.string.StringHelper;
@@ -40,7 +41,6 @@ import com.helger.peppol.smpserver.domain.user.ISMPUser;
 import com.helger.peppol.smpserver.domain.user.ISMPUserEditable;
 import com.helger.peppol.smpserver.domain.user.ISMPUserManager;
 import com.helger.peppol.smpserver.ui.AbstractSMPWebPageForm;
-import com.helger.photon.basic.security.util.SecurityHelper;
 import com.helger.photon.bootstrap3.alert.BootstrapQuestionBox;
 import com.helger.photon.bootstrap3.alert.BootstrapSuccessBox;
 import com.helger.photon.bootstrap3.alert.BootstrapWarnBox;
@@ -53,11 +53,11 @@ import com.helger.photon.bootstrap3.pages.BootstrapPagesMenuConfigurator;
 import com.helger.photon.bootstrap3.uictrls.datatables.BootstrapDTColAction;
 import com.helger.photon.bootstrap3.uictrls.datatables.BootstrapDataTables;
 import com.helger.photon.core.form.RequestField;
+import com.helger.photon.security.util.SecurityHelper;
 import com.helger.photon.uicore.icon.EDefaultIcon;
 import com.helger.photon.uicore.page.EWebPageFormAction;
 import com.helger.photon.uicore.page.WebPageExecutionContext;
 import com.helger.photon.uictrls.datatables.column.DTCol;
-import com.helger.validation.error.FormErrors;
 
 /**
  * This class manages the uses, but only if the SQL backend is used. If the XML

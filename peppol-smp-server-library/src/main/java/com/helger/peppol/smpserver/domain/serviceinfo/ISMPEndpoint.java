@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Version: MPL 1.1/EUPL 1.1
@@ -49,7 +49,6 @@ import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 
 import com.helger.commons.annotation.Nonempty;
-import com.helger.peppol.smp.EndpointType;
 import com.helger.peppol.smpserver.domain.ISMPHasExtension;
 
 /**
@@ -75,8 +74,7 @@ public interface ISMPEndpoint extends Serializable, ISMPHasExtension
    * @return The address of an endpoint, as an WS-Addressing Endpoint Reference
    *         (EPR). This is just a URL.
    */
-  @Nonnull
-  @Nonempty
+  @Nullable
   String getEndpointReference ();
 
   /**
@@ -162,5 +160,8 @@ public interface ISMPEndpoint extends Serializable, ISMPHasExtension
   String getTechnicalInformationUrl ();
 
   @Nonnull
-  EndpointType getAsJAXBObject ();
+  com.helger.peppol.smp.EndpointType getAsJAXBObjectPeppol ();
+
+  @Nonnull
+  com.helger.peppol.bdxr.EndpointType getAsJAXBObjectBDXR ();
 }

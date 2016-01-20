@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2014-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,8 +28,8 @@ import com.helger.commons.exception.InitializationException;
 import com.helger.peppol.smpserver.SMPServerConfiguration;
 import com.helger.peppol.smpserver.app.AppSecurity;
 import com.helger.peppol.smpserver.app.AppSettings;
-import com.helger.peppol.smpserver.data.sql.mgr.SQLManagerProvider;
-import com.helger.peppol.smpserver.data.xml.mgr.XMLManagerProvider;
+import com.helger.peppol.smpserver.backend.SMPBackendRegistry;
+import com.helger.peppol.smpserver.domain.ISMPManagerProvider;
 import com.helger.peppol.smpserver.domain.SMPMetaManager;
 import com.helger.peppol.smpserver.ui.AppCommonUI;
 import com.helger.peppol.smpserver.ui.pub.InitializerPublic;
@@ -39,6 +39,10 @@ import com.helger.photon.core.app.CApplication;
 import com.helger.photon.core.app.context.LayoutExecutionContext;
 import com.helger.photon.core.app.init.IApplicationInitializer;
 import com.helger.photon.core.servlet.AbstractWebAppListenerMultiApp;
+import com.helger.photon.security.login.LoggedInUserManager;
+import com.helger.photon.security.role.RoleManager;
+import com.helger.photon.security.user.UserManager;
+import com.helger.photon.security.usergroup.UserGroupManager;
 import com.helger.web.scope.mgr.WebScopeManager;
 
 /**
@@ -73,6 +77,12 @@ public class SMPWebAppListener extends AbstractWebAppListenerMultiApp <LayoutExe
   }
 
   @Override
+  protected String getInitParameterServerURL (@Nonnull final ServletContext aSC, final boolean bProductionMode)
+  {
+    return SMPServerConfiguration.getPublicServerURL ();
+  }
+
+  @Override
   @Nonnull
   protected Map <String, IApplicationInitializer <LayoutExecutionContext>> getAllInitializers ()
   {
@@ -85,16 +95,15 @@ public class SMPWebAppListener extends AbstractWebAppListenerMultiApp <LayoutExe
   public static void initBackendFromConfiguration ()
   {
     // Determine backend
-    final String sBackend = SMPServerConfiguration.getBackend ();
-    if ("sql".equalsIgnoreCase (sBackend))
-      SMPMetaManager.setManagerFactory (new SQLManagerProvider ());
+    final String sBackendID = SMPServerConfiguration.getBackend ();
+    final ISMPManagerProvider aManagerProvider = SMPBackendRegistry.getInstance ().getManagerProvider (sBackendID);
+    if (aManagerProvider != null)
+      SMPMetaManager.setManagerProvider (aManagerProvider);
     else
-      if ("xml".equalsIgnoreCase (sBackend))
-        SMPMetaManager.setManagerFactory (new XMLManagerProvider ());
-      else
-        throw new InitializationException ("Invalid backend '" +
-                                           sBackend +
-                                           "' provided. Only 'sql' and 'xml' are supported!");
+      throw new InitializationException ("Invalid backend '" +
+                                         sBackendID +
+                                         "' provided. Supported ones are: " +
+                                         SMPBackendRegistry.getInstance ().getAllBackendIDs ());
 
     // Now we can call getInstance
     SMPMetaManager.getInstance ();
@@ -111,6 +120,11 @@ public class SMPWebAppListener extends AbstractWebAppListenerMultiApp <LayoutExe
 
     super.initGlobals ();
 
+    // Call before accessing PhotonSecurityManager!
+    RoleManager.setCreateDefaults (false);
+    UserManager.setCreateDefaults (false);
+    UserGroupManager.setCreateDefaults (false);
+
     if (SMPServerConfiguration.isForceRoot ())
     {
       // Enforce an empty context path according to the specs!
@@ -123,6 +137,9 @@ public class SMPWebAppListener extends AbstractWebAppListenerMultiApp <LayoutExe
 
     // Set all security related stuff
     AppSecurity.init ();
+
+    // New login logs out old user
+    LoggedInUserManager.getInstance ().setLogoutAlreadyLoggedInUser (true);
 
     // Determine backend
     initBackendFromConfiguration ();

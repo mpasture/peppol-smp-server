@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,7 @@ public class SMPXMLTestRule extends PhotonBasicWebTestRule
 
     // Set it only once
     if (s_aInitBackend.compareAndSet (false, true))
-      SMPMetaManager.setManagerFactory (new XMLManagerProvider ());
+      SMPMetaManager.setManagerProvider (new XMLManagerProvider ());
   }
 
   @Override

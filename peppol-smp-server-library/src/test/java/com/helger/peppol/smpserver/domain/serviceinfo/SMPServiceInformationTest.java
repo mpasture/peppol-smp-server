@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Version: MPL 1.1/EUPL 1.1
@@ -58,7 +58,7 @@ import com.helger.peppol.identifier.process.SimpleProcessIdentifier;
 import com.helger.peppol.smpserver.domain.servicegroup.ISMPServiceGroup;
 import com.helger.peppol.smpserver.domain.servicegroup.SMPServiceGroup;
 import com.helger.photon.basic.mock.PhotonBasicWebTestRule;
-import com.helger.photon.basic.security.CSecurity;
+import com.helger.photon.security.CSecurity;
 
 /**
  * Test class for class {@link SMPServiceInformation}.

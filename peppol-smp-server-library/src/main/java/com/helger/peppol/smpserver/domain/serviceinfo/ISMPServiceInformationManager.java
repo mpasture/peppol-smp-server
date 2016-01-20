@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Version: MPL 1.1/EUPL 1.1
@@ -91,7 +91,7 @@ public interface ISMPServiceInformationManager
    */
   @Nonnull
   @ReturnsMutableCopy
-  Collection <? extends ISMPServiceInformation> getAllSMPServiceInformations ();
+  Collection <? extends ISMPServiceInformation> getAllSMPServiceInformation ();
 
   /**
    * @return The count of all service information objects. Always &ge; 0.

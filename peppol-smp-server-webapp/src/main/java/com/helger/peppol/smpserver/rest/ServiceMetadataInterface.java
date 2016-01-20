@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2014-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,6 +48,7 @@ import com.helger.commons.xml.transform.XMLTransformerFactory;
 import com.helger.peppol.smp.ServiceMetadataType;
 import com.helger.peppol.smp.SignedServiceMetadataType;
 import com.helger.peppol.smpserver.SMPServerConfiguration;
+import com.helger.peppol.smpserver.jaxb.MarshallerSMPSignedServiceMetadataType;
 import com.helger.peppol.smpserver.restapi.SMPServerAPI;
 import com.helger.peppol.smpserver.security.SMPKeyManager;
 import com.helger.photon.core.app.CApplication;
@@ -84,8 +85,9 @@ public final class ServiceMetadataInterface
     {
       final SignedServiceMetadataType ret = new SMPServerAPI (new SMPServerAPIDataProvider (m_aUriInfo)).getServiceRegistration (sServiceGroupID,
                                                                                                                                  sDocumentTypeID);
+
       // Convert to DOM document
-      final MarshallerSignedServiceMetadataType aMarshaller = new MarshallerSignedServiceMetadataType ();
+      final MarshallerSMPSignedServiceMetadataType aMarshaller = new MarshallerSMPSignedServiceMetadataType ();
       final Document aDoc = aMarshaller.write (ret);
 
       // Sign the document

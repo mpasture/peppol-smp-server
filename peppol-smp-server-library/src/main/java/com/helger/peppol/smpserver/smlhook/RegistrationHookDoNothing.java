@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Version: MPL 1.1/EUPL 1.1
@@ -51,7 +51,7 @@ import com.helger.peppol.identifier.IParticipantIdentifier;
  * @author PEPPOL.AT, BRZ, Philip Helger
  */
 @Immutable
-public final class RegistrationHookDoNothing implements IRegistrationHook
+public class RegistrationHookDoNothing implements IRegistrationHook
 {
   public void createServiceGroup (@Nonnull final IParticipantIdentifier aPI)
   {}

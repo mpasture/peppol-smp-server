@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2014-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +16,11 @@
  */
 package com.helger.peppol.smpserver;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nullable;
 
+import com.helger.commons.string.StringHelper;
+import com.helger.commons.system.SystemProperties;
+import com.helger.peppol.smpserver.domain.SMPMetaManager;
 import com.helger.peppol.smpserver.servlet.SMPWebAppListener;
 import com.helger.photon.basic.mock.PhotonBasicWebTestRule;
 
@@ -28,21 +31,32 @@ import com.helger.photon.basic.mock.PhotonBasicWebTestRule;
  */
 public class SMPServerTestRule extends PhotonBasicWebTestRule
 {
-  private static final AtomicBoolean s_aInitBackend = new AtomicBoolean (false);
+  public SMPServerTestRule ()
+  {
+    this (null);
+  }
+
+  public SMPServerTestRule (@Nullable final String sSMPServerPropertiesPath)
+  {
+    if (StringHelper.hasText (sSMPServerPropertiesPath))
+    {
+      SystemProperties.setPropertyValue (SMPServerConfiguration.SYSTEM_PROPERTY_SMP_SERVER_PROPERTIES_PATH, sSMPServerPropertiesPath);
+      SMPServerConfiguration.reloadConfiguration ();
+    }
+  }
 
   @Override
   public void before ()
   {
     super.before ();
-
-    // Set it only once
-    if (s_aInitBackend.compareAndSet (false, true))
-      SMPWebAppListener.initBackendFromConfiguration ();
+    SMPWebAppListener.initBackendFromConfiguration ();
   }
 
   @Override
   public void after ()
   {
+    // Reset for next run
+    SMPMetaManager.setManagerProvider (null);
     super.after ();
   }
 }

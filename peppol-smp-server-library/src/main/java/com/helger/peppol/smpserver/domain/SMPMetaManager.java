@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Version: MPL 1.1/EUPL 1.1
@@ -41,11 +41,11 @@
 package com.helger.peppol.smpserver.domain;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.helger.commons.ValueEnforcer;
 import com.helger.commons.annotation.UsedViaReflection;
 import com.helger.commons.exception.InitializationException;
 import com.helger.commons.lang.ClassHelper;
@@ -54,41 +54,52 @@ import com.helger.commons.scope.singleton.AbstractGlobalSingleton;
 import com.helger.peppol.smpserver.domain.redirect.ISMPRedirectManager;
 import com.helger.peppol.smpserver.domain.servicegroup.ISMPServiceGroupManager;
 import com.helger.peppol.smpserver.domain.serviceinfo.ISMPServiceInformationManager;
+import com.helger.peppol.smpserver.domain.transportprofile.SMPTransportProfileManager;
 import com.helger.peppol.smpserver.domain.user.ISMPUserManager;
 import com.helger.peppol.smpserver.security.SMPKeyManager;
 
 /**
  * The central SMP meta manager containing all the singleton manager instances.
- * 
+ *
  * @author Philip Helger
  */
 public final class SMPMetaManager extends AbstractGlobalSingleton
 {
   private static final Logger s_aLogger = LoggerFactory.getLogger (SMPMetaManager.class);
 
+  public static final String FILENAME_TRANSPORT_PROFILES = "transportprofiles.xml";
+
   private static ISMPManagerProvider s_aManagerProvider = null;
 
+  private SMPTransportProfileManager m_aTransportProfileManager;
   private ISMPUserManager m_aUserMgr;
   private ISMPServiceGroupManager m_aServiceGroupMgr;
   private ISMPRedirectManager m_aRedirectMgr;
   private ISMPServiceInformationManager m_aServiceInformationMgr;
 
   /**
-   * Set the manager factory to be used. This must be called exactly once before
-   * {@link #getInstance()} is called.
+   * Set the manager provider to be used. This must be called exactly once
+   * before {@link #getInstance()} is called.
    *
-   * @param aManagerFactory
-   *        The manager factory to be used. May not be <code>null</code>.
+   * @param aManagerProvider
+   *        The manager factory to be used. May be <code>null</code> for testing
+   *        purposes.
    * @throws IllegalStateException
-   *         If another manager factory is already present.
+   *         If another manager provider is already present.
    */
-  public static void setManagerFactory (@Nonnull final ISMPManagerProvider aManagerFactory)
+  public static void setManagerProvider (@Nullable final ISMPManagerProvider aManagerProvider)
   {
-    ValueEnforcer.notNull (aManagerFactory, "ManagerFactory");
-    if (s_aManagerProvider != null)
-      throw new IllegalStateException ("A manager factory is already set. You cannot set this twice!");
-    s_aManagerProvider = aManagerFactory;
-    s_aLogger.info ("Using " + aManagerFactory + " as the backend");
+    if (s_aManagerProvider != null && aManagerProvider != null)
+      throw new IllegalStateException ("A manager provider is already set. You cannot set this twice!");
+
+    if (isGlobalSingletonInstantiated (SMPMetaManager.class))
+      s_aLogger.warn ("Setting the manager provider after singleton instantiation may not have the desired effect.");
+
+    s_aManagerProvider = aManagerProvider;
+    if (aManagerProvider == null)
+      s_aLogger.info ("Using no backend manager provider");
+    else
+      s_aLogger.info ("Using " + aManagerProvider + " as the backend");
   }
 
   @Deprecated
@@ -104,6 +115,8 @@ public final class SMPMetaManager extends AbstractGlobalSingleton
 
     try
     {
+      m_aTransportProfileManager = new SMPTransportProfileManager (FILENAME_TRANSPORT_PROFILES);
+
       m_aUserMgr = s_aManagerProvider.createUserMgr ();
       if (m_aUserMgr == null)
         throw new IllegalStateException ("Failed to create User manager!");
@@ -126,12 +139,12 @@ public final class SMPMetaManager extends AbstractGlobalSingleton
       }
       catch (final Exception ex)
       {
-        // fall through. Certificate stays invalid
+        // fall through. Certificate stays invalid, no SML access possible.
       }
 
       s_aLogger.info (ClassHelper.getClassLocalName (this) + " was initialized");
     }
-    catch (final RuntimeException ex)
+    catch (final Exception ex)
     {
       throw new InitializationException ("Failed to init " + ClassHelper.getClassLocalName (this), ex);
     }
@@ -141,6 +154,12 @@ public final class SMPMetaManager extends AbstractGlobalSingleton
   public static SMPMetaManager getInstance ()
   {
     return getGlobalSingleton (SMPMetaManager.class);
+  }
+
+  @Nonnull
+  public static SMPTransportProfileManager getTransportProfileMgr ()
+  {
+    return getInstance ().m_aTransportProfileManager;
   }
 
   @Nonnull

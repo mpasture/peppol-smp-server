@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (C) 2015 Philip Helger (www.helger.com)
+    Copyright (C) 2015-2016 Philip Helger (www.helger.com)
     philip[at]helger[dot]com
 
     Version: MPL 1.1/EUPL 1.1
@@ -45,7 +45,7 @@
   <parent>
     <groupId>com.helger</groupId>
     <artifactId>peppol-smp-server-parent-pom</artifactId>
-    <version>4.0.3-SNAPSHOT</version>
+    <version>4.1.1-SNAPSHOT</version>
   </parent>
   <artifactId>peppol-smp-server-library</artifactId>
   <packaging>bundle</packaging>
@@ -94,6 +94,18 @@
       <groupId>com.helger</groupId>
       <artifactId>ph-web</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.helger</groupId>
+      <artifactId>ph-oton-basic</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.helger</groupId>
+      <artifactId>ph-settings</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.helger</groupId>
+      <artifactId>ph-jaxb</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -108,12 +120,35 @@
     </dependency>
     <dependency>
       <groupId>com.helger</groupId>
-      <artifactId>ph-oton-basic</artifactId>
+      <artifactId>ph-oton-security</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
 
   <build>
+    <resources>
+      <!-- Hack to filter only properties files -->
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>**/*.properties</exclude>
+        </excludes>
+      </resource>
+      <!-- All the rest -->
+      <resource>
+        <directory>${basedir}/src/test/resources</directory>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>

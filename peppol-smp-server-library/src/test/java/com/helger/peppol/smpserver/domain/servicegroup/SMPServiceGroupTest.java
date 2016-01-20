@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Version: MPL 1.1/EUPL 1.1
@@ -51,7 +51,7 @@ import org.junit.rules.TestRule;
 import com.helger.commons.string.StringHelper;
 import com.helger.peppol.identifier.participant.SimpleParticipantIdentifier;
 import com.helger.photon.basic.mock.PhotonBasicWebTestRule;
-import com.helger.photon.basic.security.CSecurity;
+import com.helger.photon.security.CSecurity;
 
 /**
  * Test class for class {@link SMPServiceGroup}.

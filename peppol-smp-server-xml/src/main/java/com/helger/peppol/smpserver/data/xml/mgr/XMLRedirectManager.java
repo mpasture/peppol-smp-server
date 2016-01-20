@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +48,7 @@ import com.helger.peppol.smpserver.domain.servicegroup.ISMPServiceGroup;
 import com.helger.photon.basic.app.dao.impl.AbstractWALDAO;
 import com.helger.photon.basic.app.dao.impl.DAOException;
 import com.helger.photon.basic.app.dao.impl.EDAOActionType;
-import com.helger.photon.basic.security.audit.AuditHelper;
+import com.helger.photon.basic.audit.AuditHelper;
 
 /**
  * Manager for all {@link SMPRedirect} objects.

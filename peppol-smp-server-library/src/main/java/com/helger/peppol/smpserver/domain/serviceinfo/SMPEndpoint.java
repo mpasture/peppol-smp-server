@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Version: MPL 1.1/EUPL 1.1
@@ -53,6 +53,7 @@ import com.helger.commons.equals.EqualsHelper;
 import com.helger.commons.hashcode.HashCodeGenerator;
 import com.helger.commons.string.StringHelper;
 import com.helger.commons.string.ToStringGenerator;
+import com.helger.peppol.bdxr.BDXRExtensionConverter;
 import com.helger.peppol.smp.EndpointType;
 import com.helger.peppol.smp.SMPExtensionConverter;
 import com.helger.peppol.utils.CertificateHelper;
@@ -79,7 +80,7 @@ public class SMPEndpoint implements ISMPEndpoint
   private String m_sExtension;
 
   public SMPEndpoint (@Nonnull @Nonempty final String sTransportProfile,
-                      @Nonnull @Nonempty final String sEndpointReference,
+                      @Nullable final String sEndpointReference,
                       final boolean bRequireBusinessLevelSignature,
                       @Nullable final String sMinimumAuthenticationLevel,
                       @Nullable final LocalDateTime aServiceActivationDT,
@@ -116,16 +117,14 @@ public class SMPEndpoint implements ISMPEndpoint
     m_sTransportProfile = sTransportProfile;
   }
 
-  @Nonnull
-  @Nonempty
+  @Nullable
   public String getEndpointReference ()
   {
     return m_sEndpointReference;
   }
 
-  public void setEndpointReference (@Nonnull @Nonempty final String sEndpointReference)
+  public void setEndpointReference (@Nullable final String sEndpointReference)
   {
-    ValueEnforcer.notEmpty (sEndpointReference, "EndpointReference");
     m_sEndpointReference = sEndpointReference;
   }
 
@@ -250,20 +249,74 @@ public class SMPEndpoint implements ISMPEndpoint
     m_sExtension = sExtension;
   }
 
-  @Nonnull
-  public EndpointType getAsJAXBObject ()
+  // XXX replace with CertificateHelper version in peppol-commons >= 4.3.4
+  @Nullable
+  public static String getRFC1421CompliantString (@Nullable final String sCertificate, final boolean bIncludePEMHeader)
   {
-    final EndpointType ret = new EndpointType ();
+    // Remove special begin and end stuff
+    String sPlainString = CertificateHelper.getWithoutPEMHeader (sCertificate);
+    if (StringHelper.hasNoText (sPlainString))
+      return null;
+
+    // Start building the result
+    final int nMaxLineLength = 64;
+    final String sCRLF = "\r\n";
+    // Start with the prefix
+    final StringBuilder aSB = new StringBuilder ();
+    if (bIncludePEMHeader)
+      aSB.append (CertificateHelper.BEGIN_CERTIFICATE).append ('\n');
+    while (sPlainString.length () > nMaxLineLength)
+    {
+      // Append line + CRLF
+      aSB.append (sPlainString, 0, nMaxLineLength).append (sCRLF);
+
+      // Remove the start of the string
+      sPlainString = sPlainString.substring (nMaxLineLength);
+    }
+
+    // Append the rest
+    aSB.append (sPlainString);
+
+    // Add trailer
+    if (bIncludePEMHeader)
+      aSB.append ('\n').append (CertificateHelper.END_CERTIFICATE);
+
+    return aSB.toString ();
+  }
+
+  @Nonnull
+  public com.helger.peppol.smp.EndpointType getAsJAXBObjectPeppol ()
+  {
+    final com.helger.peppol.smp.EndpointType ret = new com.helger.peppol.smp.EndpointType ();
     ret.setEndpointReference (W3CEndpointReferenceHelper.createEndpointReference (m_sEndpointReference));
     ret.setRequireBusinessLevelSignature (m_bRequireBusinessLevelSignature);
     ret.setMinimumAuthenticationLevel (m_sMinimumAuthenticationLevel);
     ret.setServiceActivationDate (m_aServiceActivationDT);
     ret.setServiceExpirationDate (m_aServiceExpirationDT);
-    ret.setCertificate (CertificateHelper.getRFC1421CompliantString (m_sCertificate));
+    // For compatibility, don't add BEGIN_CERTIFCATE and END_CERTIFICATE
+    ret.setCertificate (getRFC1421CompliantString (m_sCertificate, false));
     ret.setServiceDescription (m_sServiceDescription);
     ret.setTechnicalContactUrl (m_sTechnicalContactUrl);
     ret.setTechnicalInformationUrl (m_sTechnicalInformationUrl);
     ret.setExtension (SMPExtensionConverter.convertOrNull (m_sExtension));
+    ret.setTransportProfile (m_sTransportProfile);
+    return ret;
+  }
+
+  @Nonnull
+  public com.helger.peppol.bdxr.EndpointType getAsJAXBObjectBDXR ()
+  {
+    final com.helger.peppol.bdxr.EndpointType ret = new com.helger.peppol.bdxr.EndpointType ();
+    ret.setEndpointURI (m_sEndpointReference);
+    ret.setRequireBusinessLevelSignature (m_bRequireBusinessLevelSignature);
+    ret.setMinimumAuthenticationLevel (m_sMinimumAuthenticationLevel);
+    ret.setServiceActivationDate (m_aServiceActivationDT);
+    ret.setServiceExpirationDate (m_aServiceExpirationDT);
+    ret.setCertificate (CertificateHelper.convertCertificateStringToByteArray (m_sCertificate));
+    ret.setServiceDescription (m_sServiceDescription);
+    ret.setTechnicalContactUrl (m_sTechnicalContactUrl);
+    ret.setTechnicalInformationUrl (m_sTechnicalInformationUrl);
+    ret.setExtension (BDXRExtensionConverter.convertOrNull (m_sExtension));
     ret.setTransportProfile (m_sTransportProfile);
     return ret;
   }

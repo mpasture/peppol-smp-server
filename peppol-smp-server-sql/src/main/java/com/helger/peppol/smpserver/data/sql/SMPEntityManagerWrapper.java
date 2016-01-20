@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2015-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Version: MPL 1.1/EUPL 1.1
@@ -49,7 +49,7 @@ import com.helger.db.jpa.AbstractPerRequestEntityManager;
 /**
  * The per-request singleton, that creates {@link EntityManager} objects from
  * {@link SMPEntityManagerFactory}.
- * 
+ *
  * @author philip
  */
 public final class SMPEntityManagerWrapper extends AbstractPerRequestEntityManager

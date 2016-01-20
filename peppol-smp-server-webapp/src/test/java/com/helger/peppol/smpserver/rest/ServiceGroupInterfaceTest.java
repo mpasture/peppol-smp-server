@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2014-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,73 +16,147 @@
  */
 package com.helger.peppol.smpserver.rest;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import java.util.Arrays;
+import java.util.Collection;
+
+import javax.annotation.Nonnull;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 
-import org.glassfish.grizzly.http.server.HttpServer;
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.helger.commons.ValueEnforcer;
+import com.helger.commons.annotation.Nonempty;
+import com.helger.commons.collection.ArrayHelper;
+import com.helger.commons.collection.CollectionHelper;
+import com.helger.commons.io.resource.ClassPathResource;
+import com.helger.commons.string.StringHelper;
 import com.helger.peppol.identifier.participant.SimpleParticipantIdentifier;
 import com.helger.peppol.smp.ObjectFactory;
 import com.helger.peppol.smp.ServiceGroupType;
-import com.helger.photon.basic.mock.PhotonBasicWebTestRule;
+import com.helger.peppol.smpserver.data.xml.mgr.XMLServiceGroupManager;
+import com.helger.peppol.smpserver.domain.SMPMetaManager;
+import com.helger.photon.security.CSecurity;
+import com.helger.web.http.CHTTPHeader;
+import com.helger.web.http.basicauth.BasicAuthClientCredentials;
 
 /**
  * Test class for class {@link ServiceGroupInterface}
  *
  * @author Philip Helger
  */
-@Ignore
+@RunWith (Parameterized.class)
 public final class ServiceGroupInterfaceTest
 {
-  @Rule
-  public final TestRule m_aRule = new PhotonBasicWebTestRule ();
+  private static final Logger s_aLogger = LoggerFactory.getLogger (ServiceGroupInterfaceTest.class);
 
-  private HttpServer m_aServer;
-  private WebTarget m_aTarget;
-  private final ObjectFactory m_aObjFactory = new ObjectFactory ();
-
-  @Before
-  public void setUp ()
+  @Parameters (name = "{index}.: {0}")
+  public static Collection <String> data ()
   {
-    // http only
-    m_aServer = MockServer.startRegularServer ();
-
-    final Client aClient = ClientBuilder.newClient ();
-    m_aTarget = aClient.target (MockServer.BASE_URI_HTTP);
+    return CollectionHelper.newList ("test-smp-server-xml.properties", "test-smp-server-sql.properties");
   }
 
-  @After
-  public void tearDown ()
+  @Rule
+  public final SMPServerRESTTestRule m_aRule;
+
+  public ServiceGroupInterfaceTest (@Nonnull final String sClassPath)
   {
-    m_aServer.shutdownNow ();
+    m_aRule = new SMPServerRESTTestRule (new ClassPathResource (sClassPath).getAsFile ().getAbsolutePath ());
+  }
+
+  private final ObjectFactory m_aObjFactory = new ObjectFactory ();
+
+  @Nonnull
+  private static Builder _addCredentials (@Nonnull final Builder aBuilder)
+  {
+    if (SMPMetaManager.getServiceGroupMgr () instanceof XMLServiceGroupManager)
+    {
+      // Use default credentials for XML backend
+      return aBuilder.header (CHTTPHeader.AUTHORIZATION,
+                              new BasicAuthClientCredentials (CSecurity.USER_ADMINISTRATOR_LOGIN,
+                                                              CSecurity.USER_ADMINISTRATOR_PASSWORD).getRequestValue ());
+    }
+
+    // Use default credentials for SQL backend
+    return aBuilder.header (CHTTPHeader.AUTHORIZATION,
+                            new BasicAuthClientCredentials ("peppol_user", "Test1234").getRequestValue ());
+  }
+
+  private static void _testResponse (@Nonnull final Response aResponseMsg, @Nonempty final int... aStatusCodes)
+  {
+    ValueEnforcer.notNull (aResponseMsg, "ResponseMsg");
+    ValueEnforcer.notEmpty (aStatusCodes, "StatusCodes");
+
+    assertNotNull (aResponseMsg);
+    // Read response
+    final String sResponse = aResponseMsg.readEntity (String.class);
+    if (StringHelper.hasText (sResponse))
+      s_aLogger.info ("HTTP Response: " + sResponse);
+    assertTrue (aResponseMsg.getStatus () +
+                " is not in " +
+                Arrays.toString (aStatusCodes),
+                ArrayHelper.contains (aStatusCodes, aResponseMsg.getStatus ()));
   }
 
   @Test
   public void testCreateAndDeleteServiceGroup ()
   {
-    final String sPI = "9915:xxx";
+    final SimpleParticipantIdentifier aPI = SimpleParticipantIdentifier.createWithDefaultScheme ("9915:xxx");
+    final String sPI = aPI.getURIEncoded ();
     final ServiceGroupType aSG = new ServiceGroupType ();
-    aSG.setParticipantIdentifier (SimpleParticipantIdentifier.createWithDefaultScheme (sPI));
+    aSG.setParticipantIdentifier (aPI);
 
-    final Response aResponseMsg = m_aTarget.path (sPI)
-                                           .request ()
-                                           .property (HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_USERNAME,
-                                                      "peppol")
-                                           .property (HttpAuthenticationFeature.HTTP_AUTHENTICATION_BASIC_PASSWORD,
-                                                      "Test1234")
-                                           .put (Entity.xml (m_aObjFactory.createServiceGroup (aSG)));
-    assertNotNull (aResponseMsg);
+    final WebTarget aTarget = m_aRule.getWebTarget ();
+    Response aResponseMsg;
+
+    try
+    {
+      // GET
+      _testResponse (aTarget.path (sPI).request ().get (), 404);
+
+      // PUT 1
+      aResponseMsg = _addCredentials (aTarget.path (sPI)
+                                             .request ()).put (Entity.xml (m_aObjFactory.createServiceGroup (aSG)));
+      _testResponse (aResponseMsg, 200);
+
+      assertNotNull (aTarget.path (sPI).request ().get (ServiceGroupType.class));
+      assertTrue (SMPMetaManager.getServiceGroupMgr ().containsSMPServiceGroupWithID (aPI));
+
+      // PUT 2
+      aResponseMsg = _addCredentials (aTarget.path (sPI)
+                                             .request ()).put (Entity.xml (m_aObjFactory.createServiceGroup (aSG)));
+      _testResponse (aResponseMsg, 200);
+
+      assertNotNull (aTarget.path (sPI).request ().get (ServiceGroupType.class));
+      assertTrue (SMPMetaManager.getServiceGroupMgr ().containsSMPServiceGroupWithID (aPI));
+
+      // DELETE 1
+      aResponseMsg = _addCredentials (aTarget.path (sPI).request ()).delete ();
+      _testResponse (aResponseMsg, 200);
+
+      _testResponse (aTarget.path (sPI).request ().get (), 404);
+      assertFalse (SMPMetaManager.getServiceGroupMgr ().containsSMPServiceGroupWithID (aPI));
+    }
+    finally
+    {
+      // DELETE 2
+      aResponseMsg = _addCredentials (aTarget.path (sPI).request ()).delete ();
+      _testResponse (aResponseMsg, 200, 404);
+
+      _testResponse (aTarget.path (sPI).request ().get (), 404);
+      assertFalse (SMPMetaManager.getServiceGroupMgr ().containsSMPServiceGroupWithID (aPI));
+    }
   }
 }

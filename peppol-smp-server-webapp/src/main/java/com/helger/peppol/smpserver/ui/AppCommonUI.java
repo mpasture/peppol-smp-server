@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2015 Philip Helger (www.helger.com)
+ * Copyright (C) 2014-2016 Philip Helger (www.helger.com)
  * philip[at]helger[dot]com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,7 +43,6 @@ import com.helger.html.hc.html.grouping.HCUL;
 import com.helger.html.hc.html.tabular.HCCol;
 import com.helger.html.hc.html.tabular.IHCTable;
 import com.helger.html.hc.html.textlevel.HCCode;
-import com.helger.html.hc.html.textlevel.HCStrong;
 import com.helger.html.hc.html.textlevel.HCWBR;
 import com.helger.html.hc.impl.HCNodeList;
 import com.helger.html.hc.impl.HCTextNode;
@@ -61,12 +60,12 @@ import com.helger.peppol.identifier.process.EPredefinedProcessIdentifier;
 import com.helger.peppol.identifier.process.IPeppolProcessIdentifier;
 import com.helger.peppol.smpserver.ui.ajax.AjaxExecutorPublicLogin;
 import com.helger.peppol.smpserver.ui.ajax.CAjaxPublic;
-import com.helger.photon.basic.security.AccessManager;
-import com.helger.photon.basic.security.user.IUser;
 import com.helger.photon.bootstrap3.button.BootstrapButtonToolbar;
 import com.helger.photon.bootstrap3.form.BootstrapForm;
 import com.helger.photon.bootstrap3.form.BootstrapFormGroup;
 import com.helger.photon.bootstrap3.form.EBootstrapFormType;
+import com.helger.photon.bootstrap3.label.BootstrapLabel;
+import com.helger.photon.bootstrap3.label.EBootstrapLabelType;
 import com.helger.photon.bootstrap3.table.BootstrapTable;
 import com.helger.photon.bootstrap3.uictrls.datatables.BootstrapDataTables;
 import com.helger.photon.bootstrap3.uictrls.datatables.IBootstrapDataTablesConfigurator;
@@ -75,6 +74,8 @@ import com.helger.photon.core.app.context.ILayoutExecutionContext;
 import com.helger.photon.core.app.context.LayoutExecutionContext;
 import com.helger.photon.core.form.RequestField;
 import com.helger.photon.core.login.CLogin;
+import com.helger.photon.security.mgr.PhotonSecurityManager;
+import com.helger.photon.security.user.IUser;
 import com.helger.photon.uictrls.datatables.DataTablesLengthMenu;
 import com.helger.photon.uictrls.datatables.EDataTablesFilterType;
 import com.helger.photon.uictrls.datatables.ajax.AjaxExecutorDataTables;
@@ -85,10 +86,7 @@ import com.helger.web.scope.IRequestWebScopeWithoutResponse;
 @Immutable
 public final class AppCommonUI
 {
-  private static final DataTablesLengthMenu LENGTH_MENU = new DataTablesLengthMenu ().addItem (25)
-                                                                                     .addItem (50)
-                                                                                     .addItem (100)
-                                                                                     .addItemAll ();
+  private static final DataTablesLengthMenu LENGTH_MENU = new DataTablesLengthMenu ().addItem (25).addItem (50).addItem (100).addItemAll ();
 
   private AppCommonUI ()
   {}
@@ -105,11 +103,9 @@ public final class AppCommonUI
         aDataTables.setAutoWidth (false)
                    .setLengthMenu (LENGTH_MENU)
                    .setAjaxBuilder (new JQueryAjaxBuilder ().url (CAjaxPublic.DATATABLES.getInvocationURL (aRequestScope))
-                                                            .data (new JSAssocArray ().add (AjaxExecutorDataTables.OBJECT_ID,
-                                                                                            aTable.getID ())))
+                                                            .data (new JSAssocArray ().add (AjaxExecutorDataTables.OBJECT_ID, aTable.getID ())))
                    .setServerFilterType (EDataTablesFilterType.ALL_TERMS_PER_ROW)
-                   .setTextLoadingURL (CAjaxPublic.DATATABLES_I18N.getInvocationURL (aRequestScope),
-                                       AjaxExecutorDataTablesI18N.LANGUAGE_ID)
+                   .setTextLoadingURL (CAjaxPublic.DATATABLES_I18N.getInvocationURL (aRequestScope), AjaxExecutorDataTablesI18N.LANGUAGE_ID)
                    .addPlugin (new DataTablesPluginSearchHighlight ());
       }
     });
@@ -129,9 +125,7 @@ public final class AppCommonUI
     final String sIDPassword = GlobalIDFactory.getNewStringID ();
     final String sIDErrorField = GlobalIDFactory.getNewStringID ();
 
-    final BootstrapForm aForm = new BootstrapForm (aLEC.getSelfHref (),
-                                                   bFullUI ? EBootstrapFormType.HORIZONTAL
-                                                           : EBootstrapFormType.DEFAULT);
+    final BootstrapForm aForm = new BootstrapForm (aLEC.getSelfHref (), bFullUI ? EBootstrapFormType.HORIZONTAL : EBootstrapFormType.DEFAULT);
     aForm.setLeft (3);
 
     // User name field
@@ -152,15 +146,12 @@ public final class AppCommonUI
       final JSPackage aOnClick = new JSPackage ();
       final JSAnonymousFunction aJSSuccess = new JSAnonymousFunction ();
       final JSVar aJSData = aJSSuccess.param ("data");
-      aJSSuccess.body ()
-                ._if (aJSData.ref (AjaxExecutorPublicLogin.JSON_LOGGEDIN),
-                      JSHtml.windowLocationReload (),
-                      JQuery.idRef (sIDErrorField).empty ().append (aJSData.ref (AjaxExecutorPublicLogin.JSON_HTML)));
+      aJSSuccess.body ()._if (aJSData.ref (AjaxExecutorPublicLogin.JSON_LOGGEDIN),
+                              JSHtml.windowLocationReload (),
+                              JQuery.idRef (sIDErrorField).empty ().append (aJSData.ref (AjaxExecutorPublicLogin.JSON_HTML)));
       aOnClick.add (new JQueryAjaxBuilder ().url (CAjaxPublic.LOGIN.getInvocationURI (aRequestScope))
-                                            .data (new JSAssocArray ().add (CLogin.REQUEST_ATTR_USERID,
-                                                                            JQuery.idRef (sIDUserName).val ())
-                                                                      .add (CLogin.REQUEST_ATTR_PASSWORD,
-                                                                            JQuery.idRef (sIDPassword).val ()))
+                                            .data (new JSAssocArray ().add (CLogin.REQUEST_ATTR_USERID, JQuery.idRef (sIDUserName).val ())
+                                                                      .add (CLogin.REQUEST_ATTR_PASSWORD, JQuery.idRef (sIDPassword).val ()))
                                             .success (aJSSuccess)
                                             .build ());
       aOnClick._return (false);
@@ -185,35 +176,29 @@ public final class AppCommonUI
     aCertDetails.addBodyRow ().addCell ("Serial number:").addCell (aX509Cert.getSerialNumber ().toString (16));
     aCertDetails.addBodyRow ()
                 .addCell ("Valid from:")
-                .addCell (new HCTextNode (PDTToString.getAsString (aNotBefore, aDisplayLocale)),
-                          aNowLDT.isBefore (aNotBefore) ? new HCStrong ().addChild (" !!!NOT YET VALID!!!") : null);
+                .addCell (new HCTextNode (PDTToString.getAsString (aNotBefore, aDisplayLocale) + " "),
+                          aNowLDT.isBefore (aNotBefore) ? new BootstrapLabel (EBootstrapLabelType.DANGER).addChild ("!!!NOT YET VALID!!!") : null);
     aCertDetails.addBodyRow ()
                 .addCell ("Valid to:")
-                .addCell (new HCTextNode (PDTToString.getAsString (aNotAfter, aDisplayLocale)),
-                          aNowLDT.isAfter (aNotAfter) ? new HCStrong ().addChild (" !!!NO LONGER VALID!!!")
+                .addCell (new HCTextNode (PDTToString.getAsString (aNotAfter, aDisplayLocale) + " "),
+                          aNowLDT.isAfter (aNotAfter) ? new BootstrapLabel (EBootstrapLabelType.DANGER).addChild ("!!!NO LONGER VALID!!!")
                                                       : new HCDiv ().addChild ("Valid for: " +
                                                                                PeriodFormatMultilingual.getFormatterLong (aDisplayLocale)
-                                                                                                       .print (new Period (aNowLDT,
-                                                                                                                           aNotAfter))));
+                                                                                                       .print (new Period (aNowLDT, aNotAfter))));
 
     if (aPublicKey instanceof RSAPublicKey)
     {
       // Special handling for RSA
       aCertDetails.addBodyRow ()
                   .addCell ("Public key:")
-                  .addCell (aX509Cert.getPublicKey ().getAlgorithm () +
-                            " (" +
-                            ((RSAPublicKey) aPublicKey).getModulus ().bitLength () +
-                            " bits)");
+                  .addCell (aX509Cert.getPublicKey ().getAlgorithm () + " (" + ((RSAPublicKey) aPublicKey).getModulus ().bitLength () + " bits)");
     }
     else
     {
       // Usually EC or DSA key
       aCertDetails.addBodyRow ().addCell ("Public key:").addCell (aX509Cert.getPublicKey ().getAlgorithm ());
     }
-    aCertDetails.addBodyRow ()
-                .addCell ("Signature algorithm:")
-                .addCell (aX509Cert.getSigAlgName () + " (" + aX509Cert.getSigAlgOID () + ")");
+    aCertDetails.addBodyRow ().addCell ("Signature algorithm:").addCell (aX509Cert.getSigAlgName () + " (" + aX509Cert.getSigAlgOID () + ")");
     return aCertDetails;
   }
 
@@ -283,9 +268,7 @@ public final class AppCommonUI
       aExtensions.addChild (new HCCode ().addChild (sExtension));
     }
     aUL.addItem ().addChild ("Extension IDs (" + aExtensionIDs.size () + "): ").addChild (aExtensions);
-    aUL.addItem ()
-       .addChild ("Customization ID (transaction + extensions): ")
-       .addChild (new HCCode ().addChild (aParts.getAsUBLCustomizationID ()));
+    aUL.addItem ().addChild ("Customization ID (transaction + extensions): ").addChild (new HCCode ().addChild (aParts.getAsUBLCustomizationID ()));
     aUL.addItem ().addChild ("Version: ").addChild (new HCCode ().addChild (aParts.getVersion ()));
     return aUL;
   }
@@ -293,7 +276,7 @@ public final class AppCommonUI
   @Nonnull
   public static String getOwnerName (@Nonnull @Nonempty final String sOwnerID)
   {
-    final IUser aOwner = AccessManager.getInstance ().getUserOfID (sOwnerID);
+    final IUser aOwner = PhotonSecurityManager.getUserMgr ().getUserOfID (sOwnerID);
     return aOwner == null ? sOwnerID : aOwner.getLoginName () + " (" + aOwner.getDisplayName () + ")";
   }
 }
